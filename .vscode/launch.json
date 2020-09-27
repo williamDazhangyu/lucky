@@ -2,7 +2,7 @@
     "configurations": [
 
         {
-            "name": "ts启动",
+            "name": "TS启动",
             "type": "node",
             "request": "launch",
             "args": [
@@ -19,6 +19,7 @@
             "name": "JS启动",
             "type": "node",
             "request": "launch",
+            "program": "${file}"
         },
         {
             "name": "Run mocha",

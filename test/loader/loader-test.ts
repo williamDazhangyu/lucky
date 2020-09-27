@@ -1,42 +1,67 @@
 
-import {Loader} from '../../src/loader/loader';
+import { Loader } from '../../src/loader/loader';
 import * as should from 'should';
+import { EventEmitter } from 'events';
 
-describe('loader-test',  () => {
+describe('loader-test', () => {
 
-    it("加载文件夹", ()=>{
+    it("加载文件夹", () => {
 
         const app = {};
         let dirPath = "/Users/zjx/Documents/codes/lucky/test/loader/testDir";
         const services = Loader.load(dirPath, app);
-        should.notEqual(services, false);
+        should.notEqual(services, null);
     });
 
-    it("加载文件", ()=>{
+    it("加载文件", () => {
 
         const app = {};
         let dirPath = "/Users/zjx/Documents/codes/lucky/test/loader/testDir/b.js";
         const services = Loader.loadFile(dirPath, app);
-        should.notEqual(services, false);
+        should.notEqual(services, null);
     });
 
-    it("加载空目录", ()=>{
+    it("加载空目录", () => {
 
         const app = {};
         let dirPath = "/Users/zjx/Documents/codes/lucky/test/loader/empty";
         const services = Loader.load(dirPath, app);
-        should.equal(services, false);
+        should.equal(services, null);
     });
 
-    it("热更测试", ()=>{
+    it("热更测试", () => {
 
-        const app:any = {};
+        class App extends EventEmitter {
+
+            services: {};
+
+            constructor() {
+
+                super();
+                this.services = {};
+            }
+        };
+        let app = new App();
+
+        app.on("reload", (instances) => {
+
+            app.services = instances;
+        });
+
         let dirPath = "/Users/zjx/Documents/codes/lucky/test/loader/testDir";
-        Loader.load(dirPath, app, true);
-        console.log("热更前:", app.instancesMap.get("Handler").hello());
-        setTimeout(()=>{
+        let services = Loader.load(dirPath, app);
+        if (!!services) {
 
-            console.log("热更后:", app.instancesMap.get("Handler").hello());
+            //释放资源
+            app.services = services;
+        }
+
+        //加载是否需要更新
+        Loader.watchServices(dirPath, app);
+        console.log("热更前:", app.services["Handler"]["hello"]());
+        setTimeout(() => {
+
+            console.log("热更后:", Reflect.apply(app.services["Handler"]["hello"], app.services["Handler"], []));
         }, 5000);
-    }, );
+    });
 });

@@ -2,6 +2,12 @@
 import * as fs from 'fs';
 import { sep } from 'path';
 
+export type LoaderServices = {
+
+    namespace: string,
+    method: Function
+};
+
 export class Loader {
 
     /***
@@ -20,24 +26,24 @@ export class Loader {
      * @version 1.0 加载文件
      * 
      */
-    static loadFile(filePath: string, context: any) {
+    static loadFile(filePath: string, context: any): LoaderServices {
 
         if (!fs.existsSync(filePath)) {
 
-            return false;
+            return null;
         }
 
         if (!fs.statSync(filePath).isFile()
             || (!filePath.endsWith(".js") && !filePath.endsWith(".ts"))) {
 
             console.error("不是一个js/ts文件");
-            return false;
+            return null;
         }
 
         let m = this.requireUncached(filePath);
 
         if (!m) {
-            return false;
+            return null;
         }
 
         let instance = m;
@@ -45,7 +51,7 @@ export class Loader {
         let fName = fNames[fNames.length - 1];
         fName = fName.substring(0, fName.length - ".js".length);
 
-        if (typeof m === 'function') {
+        if (m instanceof Function) {
 
             //这一步很关键 生成主要的方法 进行调用
             instance = new m(context);
@@ -55,10 +61,13 @@ export class Loader {
             }
         }
 
-        return {
-            instance: instance,
-            name: fName
+        let s: LoaderServices = {
+
+            namespace: fName,
+            method: instance
         };
+
+        return s;
     };
 
 
@@ -66,12 +75,12 @@ export class Loader {
      * @version 1.0 加载文件夹 并不会递归子目录
      * 
      */
-    static load(mpath: string, context: Object, reload?: boolean) {
+    static load(mpath: string, context: any): {} {
 
         if (!mpath) {
 
             console.error("mpath 为字符串");
-            return false;
+            return null;
         }
 
         //获取路径
@@ -81,21 +90,21 @@ export class Loader {
         } catch (err) {
 
             console.error("加载文件失败");
-            return false;
+            return null;
         }
 
         if (!fs.statSync(mpath).isDirectory()) {
 
-            return false;
+            return null;
         }
 
         let files = fs.readdirSync(mpath);
         if (files.length === 0) {
 
-            return false;
+            return null;
         }
 
-        let loadMap = new Map<string, any>();
+        let instances = {};
         files.forEach((filePath) => {
 
             let completePath = mpath + sep + filePath;
@@ -104,28 +113,31 @@ export class Loader {
 
             if (!!lresult) {
 
-                loadMap.set(lresult.name, lresult.instance);
+                instances[lresult.namespace] = lresult.method;
             }
         });
 
-        Object.assign(context, {
-            instancesMap: loadMap
-        });
+        return instances;
+    };
 
-        //是否需要重新加载项
-        if (!!reload) {
+    static watchServices(mpath: string, context: any) {
 
-            //添加热更方法 但是对于docker等环境的部署 可能监测不到
-            fs.watch(mpath, function (event, filename) {
+        if (typeof context.emit != 'function') {
 
-                if (event === 'change') {
-
-                    console.log("热更加载----", filename);
-                    Loader.load(mpath, context, false);
-                }
-            });
+            return false;
         }
 
+        //添加热更方法 但是对于docker等环境的部署 可能监测不到
+        fs.watch(mpath, function (event, filename) {
+
+            if (event === 'change') {
+
+                console.log("热更加载----", filename);
+                let instances = Loader.load(mpath, context);
+                context.emit("reload", instances);
+            }
+        });
+
         return true;
-    };
+    }
 }

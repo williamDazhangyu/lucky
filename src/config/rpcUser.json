@@ -1,0 +1,16 @@
+{
+    "development":{
+
+        "admin":"An1kUN6Gne^&72Er",
+        "master":"iMp7ANXJFosLlz%L",
+        "user":"na9o^UKOROu2cvP5",
+        "serverKey": "SSdamC4EX!&i%XozMajM7xrr3OZ6M4D1"
+    },
+    "production":{
+
+        "admin":"V^6A97ExJ5&J%469",
+        "master":"w5KTa^35zBhI85&f",
+        "user":"E6ijUhOCXsIMwb4A",
+        "serverKey": "K^xoMsa03M4FNtJlr$frUkHjw1ZTl!y9"
+    }
+}
